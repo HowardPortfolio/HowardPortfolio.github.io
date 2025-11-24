@@ -69,8 +69,6 @@
                 <button id="record-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full text-lg mb-4 transition-colors">
                     Start Recording
                 </button>
-                <!-- Added file input to accept uploaded audio -->
-                <input id="audio-file-input" type="file" accept="audio/*" class="mt-2 mb-2" />
                 <p id="recording-status" class="text-gray-600 text-sm">Press to record</p>
                 <p id="timer" class="text-xl font-mono text-gray-700 mt-2">00:00</p>
             </div>
@@ -115,7 +113,7 @@
         const submitAudioBtn = document.getElementById('submit-audio-btn');
         const transcriptSection = document.getElementById('transcript-section');
         const transcriptInput = document.getElementById('transcript-input');
-        const transcribeAnotherBtn = document.getElementById('transcribe-another-btn'); // Re-added
+        const transcribeAnotherBtn = document.getElementById('transcribe-another-btn');
         const loadingOverlay = document.getElementById('loading-overlay');
         const loadingText = document.getElementById('loading-text');
 
@@ -221,29 +219,10 @@
                     timerInterval = setInterval(updateTimer, 1000);
                 } catch (error) {
                     console.error('Error accessing microphone:', error);
-                    alert('Could not access microphone. Please allow access.'); // Using alert for simplicity as per previous instructions
+                    alert('Could not access microphone. Please allow access.');
                     recordingStatus.textContent = 'Error: Microphone access denied.';
                 }
             }
-        });
-
-        const audioFileInput = document.getElementById('audio-file-input');
-
-        // Handle user uploading an audio file
-        audioFileInput.addEventListener('change', (e) => {
-            const file = e.target.files && e.target.files[0];
-            if (!file) return;
-
-            // Use the uploaded file as the recordedAudioBlob so same submit flow works
-            recordedAudioBlob = file;
-            const audioURL = URL.createObjectURL(file);
-            audioPlayer.src = audioURL;
-            audioPlaybackContainer.classList.remove('hidden');
-            recordingStatus.textContent = `Loaded ${file.name}`;
-            recordBtn.style.display = 'none';
-            clearInterval(timerInterval);
-            seconds = 0;
-            timerEl.textContent = '00:00';
         });
 
         reRecordBtn.addEventListener('click', () => {
@@ -272,10 +251,8 @@
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                // Try to detect if the response is audio (binary), JSON with base64 audio, or JSON with transcript
                 const contentType = response.headers.get('content-type') || '';
                 if (contentType.startsWith('audio/')) {
-                    // webhook returned an audio file (e.g., mp3). Play it.
                     const audioBlob = await response.blob();
                     const ttsURL = URL.createObjectURL(audioBlob);
                     audioPlayer.src = ttsURL;
@@ -285,11 +262,9 @@
                     recordBtn.style.display = 'block';
                     recordBtn.textContent = 'Record New Audio';
                 } else {
-                    // Try parse JSON. Could contain Transcript and/or base64 TTS
                     const result = await response.json();
                     console.log("Webhook response:", result);
 
-                    // If result contains base64-encoded audio (e.g., result.TTSBase64), decode & play
                     if (result.TTSBase64) {
                         const byteString = atob(result.TTSBase64.split(',').pop());
                         const ab = new ArrayBuffer(byteString.length);
@@ -321,16 +296,16 @@
              }
          });
 
-        // Event listener for the new "Transcribe Another Audio" button
+        // Event listener for the "Transcribe Another Audio" button
         transcribeAnotherBtn.addEventListener('click', () => {
-            resetRecordingState(); // Reset recording state
-            showSection('audio-section'); // Go back to the audio recording section
+            resetRecordingState();
+            showSection('audio-section');
         });
 
         // Initial setup when the page loads
         document.addEventListener('DOMContentLoaded', () => {
             showSection('audio-section');
-            resetRecordingState(); // Ensure initial state is clean
+            resetRecordingState();
         });
     </script>
 </body>
